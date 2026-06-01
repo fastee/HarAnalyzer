@@ -1,22 +1,44 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using HarAnalyzer.Models;
 
 namespace HarAnalyzer;
 
 /// <summary>
 /// Formats analysis results as JSON or human-readable tables.
+/// Uses source-generated JsonSerializerContext for AOT compatibility.
 /// </summary>
 public static class OutputFormatter
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private static readonly HarJsonContext JsonContext = new(new JsonSerializerOptions
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
+    });
 
-    public static void WriteJson<T>(T value, TextWriter output)
+    public static void WriteJson<T>(T value, TextWriter output) where T : class
     {
-        output.Write(JsonSerializer.Serialize(value, JsonOptions));
+        var type = typeof(T);
+        WriteJsonTyped(value, type, output);
+    }
+
+    private static void WriteJsonTyped<T>(T value, Type type, TextWriter output) where T : class
+    {
+        var json = type switch
+        {
+            _ when type == typeof(HarSummary) =>
+                JsonSerializer.Serialize(value, JsonContext.HarSummary),
+            _ when type == typeof(List<HarEntrySummary>) =>
+                JsonSerializer.Serialize(value, JsonContext.ListHarEntrySummary),
+            _ when type == typeof(List<EntryOutput>) =>
+                JsonSerializer.Serialize(value, JsonContext.ListEntryOutput),
+            _ when type == typeof(List<DomainStats>) =>
+                JsonSerializer.Serialize(value, JsonContext.ListDomainStats),
+            _ when type == typeof(ShowOutput) =>
+                JsonSerializer.Serialize(value, JsonContext.ShowOutput),
+            _ => throw new NotSupportedException($"Type {type.Name} is not registered in HarJsonContext for AOT serialization.")
+        };
+        output.Write(json);
     }
 
     public static void WriteSummaryTable(HarSummary summary, TextWriter output)

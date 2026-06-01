@@ -169,22 +169,7 @@ class Program
             if (format == "table")
                 OutputFormatter.WriteEntryList(results, Console.Out);
             else
-                OutputFormatter.WriteJson(results.Select(r => new
-                {
-                    r.Id,
-                    r.StartedDateTime,
-                    r.TimeMs,
-                    r.Method,
-                    r.Url,
-                    r.Status,
-                    r.StatusText,
-                    r.MimeType,
-                    requestSize = r.RequestBodySize,
-                    responseSize = r.ResponseBodySize,
-                    r.TransferSize,
-                    r.ServerIPAddress,
-                    r.Domain
-                }), Console.Out);
+                OutputFormatter.WriteJson(results.Select(EntryOutput.From).ToList(), Console.Out);
         }
         catch (Exception ex) { WriteError(ex); }
     }
@@ -225,12 +210,16 @@ class Program
 
             if (format == "table")
             {
-                var pretty = JsonSerializer.Serialize(found.Value, new JsonSerializerOptions { WriteIndented = true });
-                Console.WriteLine(pretty);
+                // Use WriteTo for AOT-safe pretty-printing of JsonElement
+                using var stream = new MemoryStream();
+                using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+                found.Value.WriteTo(writer);
+                writer.Flush();
+                Console.WriteLine(System.Text.Encoding.UTF8.GetString(stream.ToArray()));
             }
             else
             {
-                OutputFormatter.WriteJson(new { id, entry = found.Value }, Console.Out);
+                OutputFormatter.WriteJson(new ShowOutput { Id = id, Entry = found.Value }, Console.Out);
             }
         }
         catch (Exception ex) { WriteError(ex); }
@@ -258,22 +247,7 @@ class Program
             if (format == "table")
                 OutputFormatter.WriteEntryList(results, Console.Out);
             else
-                OutputFormatter.WriteJson(results.Select(r => new
-                {
-                    r.Id,
-                    r.StartedDateTime,
-                    r.TimeMs,
-                    r.Method,
-                    r.Url,
-                    r.Status,
-                    r.StatusText,
-                    r.MimeType,
-                    requestSize = r.RequestBodySize,
-                    responseSize = r.ResponseBodySize,
-                    r.TransferSize,
-                    r.ServerIPAddress,
-                    r.Domain
-                }), Console.Out);
+                OutputFormatter.WriteJson(results.Select(EntryOutput.From).ToList(), Console.Out);
         }
         catch (Exception ex) { WriteError(ex); }
     }

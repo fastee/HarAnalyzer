@@ -1,0 +1,11 @@
+<linker>
+  <!-- Preserve System.CommandLine internals that use reflection for argument parsing -->
+  <assembly fullname="System.CommandLine">
+    <type fullname="System.CommandLine.*" preserve="all" />
+  </assembly>
+
+  <!-- Preserve types used as Argument/Option values at runtime -->
+  <assembly fullname="System.IO.FileSystem">
+    <type fullname="System.IO.FileInfo" preserve="all" />
+  </assembly>
+</linker>
