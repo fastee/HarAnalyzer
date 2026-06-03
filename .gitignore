@@ -1,5 +1,25 @@
+# Build output
 bin/
 obj/
+
+# NuGet packages
 /packages/
+
+# IDE
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
 riderModule.iml
 /_ReSharper.Caches/
+
+# Publish output
+**/publish/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+*.har
