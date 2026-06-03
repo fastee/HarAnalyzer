@@ -7,6 +7,18 @@ description: Guidance for using the HarAnalyzer CLI tool to inspect HAR (HTTP Ar
 
 You have access to `har-analyzer`, a CLI tool for querying HAR files. HAR files can be 100MB–1GB+, so **never read them directly**. Always use this tool.
 
+## Installation
+
+Pre-built binaries for Windows (x64), Linux (x64/ARM64), and macOS (x64/ARM64) are available on the [Releases page](https://github.com/fastee/HarAnalyzer/releases).
+
+If the tool is not installed, build it:
+
+```bash
+dotnet publish HarAnalyzer/HarAnalyzer.csproj -c Release
+```
+
+The executable is at `HarAnalyzer/bin/Release/net10.0/publish/HarAnalyzer`.
+
 ## Workflow
 
 Always follow this progression:
@@ -63,7 +75,7 @@ har-analyzer domains <file.har>                # Domain-level aggregation
 3. **Use JSON format for programmatic consumption** (default). Use `--format table` only when displaying results to the user.
 4. **Filter before listing** — use `--filter-*` options to narrow results. Don't list everything and then sift through it mentally.
 5. **For full request/response bodies**: `show` returns the complete entry. If the body is large (e.g., base64-encoded images), warn the user before displaying it.
-6. **Build the tool first** if it hasn't been compiled: `dotnet build HarAnalyzer/HarAnalyzer.csproj`
+6. **Build the tool first** if it hasn't been compiled: `dotnet publish HarAnalyzer/HarAnalyzer.csproj -c Release`
 
 ## Example Session
 

@@ -1,0 +1,93 @@
+name: Publish
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+            ext: .exe
+          - rid: linux-x64
+            os: ubuntu-latest
+            ext: ''
+          - rid: linux-arm64
+            os: ubuntu-latest
+            ext: ''
+          - rid: osx-x64
+            os: macos-latest
+            ext: ''
+          - rid: osx-arm64
+            os: macos-latest
+            ext: ''
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install AOT dependencies (Linux)
+        if: startsWith(matrix.rid, 'linux')
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Publish
+        run: dotnet publish HarAnalyzer/HarAnalyzer.csproj -c Release -r ${{ matrix.rid }} --self-contained -o out/${{ matrix.rid }}
+
+      - name: Upload artifact (non-Windows)
+        if: matrix.os != 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: HarAnalyzer-${{ matrix.rid }}
+          path: out/${{ matrix.rid }}/HarAnalyzer${{ matrix.ext }}
+
+      - name: Upload artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: HarAnalyzer-${{ matrix.rid }}
+          path: out/${{ matrix.rid }}/HarAnalyzer${{ matrix.ext }}
+
+      - name: Archive (Unix)
+        if: matrix.os != 'windows-latest' && startsWith(github.ref, 'refs/tags/')
+        run: tar czf HarAnalyzer-${{ matrix.rid }}.tar.gz -C out/${{ matrix.rid }} HarAnalyzer${{ matrix.ext }}
+
+      - name: Archive (Windows)
+        if: matrix.os == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd out/${{ matrix.rid }}
+          7z a -tzip ../../HarAnalyzer-${{ matrix.rid }}.zip HarAnalyzer${{ matrix.ext }}
+
+      - name: Upload archive
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-${{ matrix.rid }}
+          path: HarAnalyzer-${{ matrix.rid }}.*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: archive-*
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: HarAnalyzer-*
+          generate_release_notes: true
