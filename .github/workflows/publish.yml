@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - rid: win-x64
@@ -36,11 +37,20 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Install AOT dependencies (Linux)
-        if: startsWith(matrix.rid, 'linux')
+      - name: Install AOT dependencies (Linux x64)
+        if: matrix.rid == 'linux-x64'
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
 
+      - name: Install AOT dependencies (Linux ARM64 cross-compile)
+        if: matrix.rid == 'linux-arm64'
+        run: sudo apt-get update && sudo apt-get install -y clang lld zlib1g-dev gcc-aarch64-linux-gnu
+
+      - name: Publish (linux-arm64 cross-compile)
+        if: matrix.rid == 'linux-arm64'
+        run: dotnet publish HarAnalyzer/HarAnalyzer.csproj -c Release -r ${{ matrix.rid }} --self-contained -o out/${{ matrix.rid }} -p:LinkerFlavor=lld
+
       - name: Publish
+        if: matrix.rid != 'linux-arm64'
         run: dotnet publish HarAnalyzer/HarAnalyzer.csproj -c Release -r ${{ matrix.rid }} --self-contained -o out/${{ matrix.rid }}
 
       - name: Upload artifact (non-Windows)
